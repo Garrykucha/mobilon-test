@@ -1,9 +1,20 @@
 <template>
+  <v-container>
+
   <section
     :style="`background: ${options.color}`"
     @drop="onDrop($event, options.id)"
     @dragover.prevent
     @dragenter.prevent>
+    <div>
+      <v-select 
+        :items="sortConditions" 
+        v-model="selected"
+        class="select"
+      >
+    </v-select>
+    </div>
+    
     <div class="title">
       <h2>
         {{ options.title }}
@@ -20,7 +31,7 @@
       @click="isNewCardDialogOpen = true" />
 
     <CardItem
-      v-for="(card, index) in cards"
+      v-for="(card, index) in sortedCards"
       draggable="true"
       :key="index"
       :card="card"
@@ -35,10 +46,12 @@
       @save-card="addCard"
       @close-form="isNewCardDialogOpen = false" />
   </section>
+  </v-container>
+  
 </template>
 
 <script setup>
-  import { ref, inject } from 'vue';
+  import { ref, inject, computed } from 'vue';
   import CardItem from './CardItem.vue';
   import CardForm from './CardForm.vue';
 
@@ -46,10 +59,15 @@
   const secondList = inject('secondList');
   const lastList = inject('lastList');
 
+
+  
+
   const props = defineProps({
     options: {},
   });
 
+  const sortConditions = ['Без сортировки', 'По возрастанию', 'По убыванию'];
+  const selected = ref(sortConditions[0]);
   const isNewCardDialogOpen = ref(false);
 
   const form = ref({
@@ -63,6 +81,18 @@
   });
 
   let cards = ref([]);
+
+  
+
+  // watch(selected, (newValue, oldValue) => {
+  //   console.log(cards.value[0]);
+    
+  //   cards.value.sort(function(a, b) {
+  //     return a.rating.rate - b.rating.rate;
+  //   })
+  // });
+  
+    
 
   function getLocalCards() {
     switch (props.options.id) {
@@ -129,9 +159,41 @@
         break;
     }
   }
+
+  const sortedCards = computed(() => {
+  const currentSortCondition = selected.value;
+  const cardsList = cards.value;
+  
+ 
+  if (currentSortCondition === sortConditions[0]) {
+    return [...cardsList];
+  }
+
+  const isAscending = currentSortCondition === sortConditions[1];
+
+  return [...cardsList].sort((a, b) => {
+    const rateA = a.rating.rate;
+    const rateB = b.rating.rate;
+
+    if (rateA < rateB) return isAscending ? -1 : 1;
+    if (rateA > rateB) return isAscending ? 1 : -1;
+    return 0;
+  });
+});
+
 </script>
 
 <style lang="scss" scoped>
+  .cardList {
+    display: flex;
+    flex-direction: column;
+    
+  }
+  .select {
+    width: 380px;
+    margin: 0 auto;
+    color: white;
+  }
   section {
     padding: 10px;
     width: 400px;
